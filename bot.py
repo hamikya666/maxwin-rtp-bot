@@ -1,7 +1,5 @@
 import json
 import random
-import datetime
-import asyncio
 from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup, ReplyKeyboardMarkup, KeyboardButton
 from telegram.ext import ApplicationBuilder, CommandHandler, CallbackQueryHandler, MessageHandler, ContextTypes, filters
 import os
@@ -184,7 +182,7 @@ async def platform_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
     await query.edit_message_text(message)
 
 # ====== MAIN ======
-async def main():
+def main():
     app = ApplicationBuilder().token(BOT_TOKEN).build()
     app.add_handler(CommandHandler("start", start))
     app.add_handler(CallbackQueryHandler(lang_handler, pattern="lang_"))
@@ -194,7 +192,7 @@ async def main():
     app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, receive_id))
     app.add_handler(CommandHandler("approve", approve))
     print("Bot Running...")
-    await app.run_polling()
+    app.run_polling()  # ⚠️ 不要 asyncio.run()
 
 if __name__ == "__main__":
-    asyncio.run(main())
+    main()
