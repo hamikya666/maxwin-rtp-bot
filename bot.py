@@ -41,7 +41,7 @@ TEXTS = {
         "choose_lang": "🌐 Please Select Language",
         "welcome": "🎰 Welcome to MaxWin Official RTP Bot",
         "choose_merchant": "Please select a merchant:",
-        "register_prompt": "⚠️ Please register via official link:\n{link}\nThen enter your account ID:",
+        "register_prompt": "⚠️ Please register via official link:\nThen enter your account ID:",
         "share_contact": "📱 Please share your phone number",
         "wait_admin": "Please wait for Admin to approve your access.",
         "approved": "✅ Your account has been approved.\nSelect merchant:",
@@ -52,7 +52,7 @@ TEXTS = {
         "choose_lang": "请选择语言",
         "welcome": "🎰 欢迎来到 MaxWin 官方 RTP 查询机器人",
         "choose_merchant": "请选择商家：",
-        "register_prompt": "⚠️ 请通过以下链接注册：\n{link}\n注册后请输入账号ID：",
+        "register_prompt": "⚠️ 请通过以下链接注册：\n注册后请输入账号ID：",
         "share_contact": "📱 请授权手机号",
         "wait_admin": "请等待 Admin 审核权限。",
         "approved": "✅ 审核通过 ✅\n请选择商家：",
@@ -63,7 +63,7 @@ TEXTS = {
         "choose_lang": "Sila Pilih Bahasa",
         "welcome": "🎰 Selamat Datang ke MaxWin RTP Bot Rasmi",
         "choose_merchant": "Sila pilih merchant:",
-        "register_prompt": "⚠️ Sila daftar melalui pautan rasmi:\n{link}\nKemudian masukkan ID akaun:",
+        "register_prompt": "⚠️ Sila daftar melalui pautan rasmi:\nKemudian masukkan ID akaun:",
         "share_contact": "📱 Sila kongsi nombor telefon anda",
         "wait_admin": "Sila tunggu Admin meluluskan akses anda.",
         "approved": "✅ Akaun anda telah diluluskan.\nPilih merchant:",
@@ -98,7 +98,11 @@ async def lang_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 # ====== 显示商家 ======
 async def show_merchants(query, text):
+    user_id = query.from_user.id
+    lang = user_language.get(user_id, "en")
     keyboard = [[InlineKeyboardButton(m, callback_data=f"merchant_{m}")] for m in MERCHANT_LINKS.keys()]
+    # 添加返回语言选择按钮
+    keyboard.append([InlineKeyboardButton("🔙 返回语言选择", callback_data="back_lang")])
     await query.edit_message_text(text=text, reply_markup=InlineKeyboardMarkup(keyboard))
 
 # ====== 商家选择 ======
@@ -113,9 +117,11 @@ async def merchant_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
         text = TEXTS[lang]["select_platform"].format(merchant=merchant)
         await show_platforms(query, merchant, lang, text)
     else:
-        link = MERCHANT_LINKS[merchant]
-        text = TEXTS[lang]["register_prompt"].format(link=link)
-        await query.edit_message_text(text=text)
+        text = TEXTS[lang]["register_prompt"]
+        # 注册按钮
+        register_button = InlineKeyboardButton("点击注册", url=MERCHANT_LINKS[merchant])
+        keyboard = [[register_button], [InlineKeyboardButton("🔙 返回商家选择", callback_data="back_merchant")]]
+        await query.edit_message_text(text=text, reply_markup=InlineKeyboardMarkup(keyboard), disable_web_page_preview=True)
 
 # ====== 接收注册ID ======
 async def receive_id(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -163,6 +169,8 @@ async def approve(update: Update, context: ContextTypes.DEFAULT_TYPE):
 # ====== 平台显示 ======
 async def show_platforms(query, merchant, lang, text):
     keyboard = [[InlineKeyboardButton(p, callback_data=f"platform_{merchant}_{p}")] for p in PLATFORMS]
+    # 添加返回商家选择按钮
+    keyboard.append([InlineKeyboardButton("🔙 返回商家选择", callback_data="back_merchant")])
     await query.edit_message_text(text=text, reply_markup=InlineKeyboardMarkup(keyboard))
 
 # ====== 平台RTP显示 ======
@@ -179,7 +187,28 @@ async def platform_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
     message = TEXTS[lang]["rtp_top"].format(merchant=merchant, platform=platform)
     for game, rtp in top15:
         message += f"{game} - {rtp}%\n"
-    await query.edit_message_text(message)
+    # 添加返回平台按钮
+    keyboard = [[InlineKeyboardButton("🔙 返回平台选择", callback_data=f"merchant_{merchant}")]]
+    await query.edit_message_text(message, reply_markup=InlineKeyboardMarkup(keyboard))
+
+# ====== 返回按钮处理 ======
+async def back_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    query = update.callback_query
+    await query.answer()
+    if query.data == "back_lang":
+        keyboard = [
+            [InlineKeyboardButton("🇨🇳 中文", callback_data="lang_zh")],
+            [InlineKeyboardButton("🇬🇧 English", callback_data="lang_en")],
+            [InlineKeyboardButton("🇲🇾 Bahasa Melayu", callback_data="lang_my")]
+        ]
+        await query.edit_message_text("🌐 Please select language / 请选择语言 / Sila Pilih Bahasa", reply_markup=InlineKeyboardMarkup(keyboard))
+    elif query.data == "back_merchant":
+        user_id = query.from_user.id
+        lang = user_language.get(user_id, "en")
+        text = TEXTS[lang]["choose_merchant"]
+        keyboard = [[InlineKeyboardButton(m, callback_data=f"merchant_{m}")] for m in MERCHANT_LINKS.keys()]
+        keyboard.append([InlineKeyboardButton("🔙 返回语言选择", callback_data="back_lang")])
+        await query.edit_message_text(text=text, reply_markup=InlineKeyboardMarkup(keyboard))
 
 # ====== MAIN ======
 def main():
@@ -188,11 +217,12 @@ def main():
     app.add_handler(CallbackQueryHandler(lang_handler, pattern="lang_"))
     app.add_handler(CallbackQueryHandler(merchant_handler, pattern="merchant_"))
     app.add_handler(CallbackQueryHandler(platform_handler, pattern="platform_"))
+    app.add_handler(CallbackQueryHandler(back_handler, pattern="back_"))
     app.add_handler(MessageHandler(filters.CONTACT, receive_contact))
     app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, receive_id))
     app.add_handler(CommandHandler("approve", approve))
     print("Bot Running...")
-    app.run_polling()  # ⚠️ 不要 asyncio.run()
+    app.run_polling()
 
 if __name__ == "__main__":
     main()
