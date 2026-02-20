@@ -10,7 +10,8 @@ import os
 BOT_TOKEN = os.environ.get("BOT_TOKEN")
 ADMIN_ID = int(os.environ.get("ADMIN_ID", 0))
 USERS_FILE = "users.json"
-VIDEO_FILE_ID = "BAACAgUAAxkBAAJ682mYXMwrOUSatmP8ROjQJcx6vtw9AAI1HAACd5HBVPGdMpbcTHcZOgQ"
+
+VIDEO_FILEID = "BAACAgUAAxkBAAJ682mYXMwrOUSatmP8ROjQJcx6vtw9AAI1HAACd5HBVPGdMpbcTHcZOgQ"
 
 # ====== 初始化用户文件 ======
 if not os.path.exists(USERS_FILE):
@@ -28,122 +29,91 @@ MERCHANT_LINKS = {
     "U9PLAY": "https://u9play99.com/R=C8BAAC"
 }
 
-# ====== CM8 平台和游戏 ======
+# ====== CM8游戏平台示例 ======
 CM8_PLATFORMS = {
-    "VPOWER": [
-        "DolphinReef", "Mahjong Ways 2", "Triple Supreme Olympic", "RAVE FEVER PARTY", "Cash Machine",
-        "Starlight Princess", "PIRATE BINGO", "GOLDEN CENTURY", "BAOZHUZHAOFU", "Fortune Bowls",
-        "Battleground Royale", "The Crypt", "FORTUNE OX", "Fortune Mouse", "King of Olympus",
-        "Super Golf Drive", "Alchemy Gold", "Fire Hot 5", "Chin shi huang", "The Knight King",
-        "Black-Myth: Wukong", "BAOZHUZHAOCAI", "Gold Pots", "Lamp of Infinity", "Fortune Tiger",
-        "Treasures of Aztec", "ZhaoCaiJinBao", "Eyes of Fortune", "Magic Pearl", "Alice"
-    ],
-    "HACKSAW": [
-        "Stick'Em", "OmNom", "Miami Multiplier", "Cubes", "Cash Compass", "The Respinners",
-        "Chaos Crew", "Mystery Motel", "Let It Snow", "Cubes 2", "Aztec Twist"
-    ],
-    # 继续填充其他 CM8 平台游戏
+    "VPOWER": ["DolphinReef","Mahjong Ways 2","Triple Supreme Olympic","RAVE FEVER PARTY","Cash Machine","Starlight Princess","PIRATE BINGO","GOLDEN CENTURY","BAOZHUZHAOFU","Fortune Bowls","Battleground Royale","the crypt","FORTUNE OX","Fortune Mouse","King of Olympus","Super Golf Drive","Alchemy Gold","Fire Hot 5","Chin shi huang","The Knight King","Black-Myth: Wukong","BAOZHUZHAOCAI","Gold Pots","Lamp of Infinity","Fortune Tiger","Treasures of Aztec"],
+    "HACKSAW": ["Stick'Em","OmNom","Miami Multiplier","Cubes","Cash Compass","The Respinners","Chaos Crew","Mystery Motel","Let It Snow","Cubes 2"],
+    "LUCKY365": ["SuperAce Plus","Wisdom Athena 1000","Sweet Bonanza 1000","Ganesha Fortune","Wild Ape","Pinata Wins"],
+    "ACE333": ["Luxury Cruise","Robin Hood","Gates Of Olympus","Twin Dragon Treasure","Eggs Of Gold","Buffalo Rush"],
+    "CROCO GAMING": ["Super Waldo","Tim & Larry","Deadliest Sea","Wizard's Academy","Dragon Quest","John Wild"],
+    "918Kiss": ["Pokémon","KingDerby","Motorbike","CarRacing","MonkeyStoryPlus"],
+    "MEGA888": ["THUNDER BOLT","KING DERBY","MENMAID JEWELS","ANCIENT EGYPT","MOTORBIKE"],
+    "MONKEY KING": ["ICELAND","GOD OF WEALTH","INDIAN MYTH","GREAT BLUE","THAI PARADISE"]
 }
-
-# ====== 新增大供应商示例 ======
-NEW_SUPPLIERS = {
-    "NOLIMITCITY": ["Game A", "Game B", "Game C"],
-    "IN&OUT": ["Game D", "Game E"],
-    "GFG": ["Game F", "Game G"],
-    "JDB": ["Game H", "Game I"],
-    "FASTSPIN": ["Game J", "Game K"],
-    "BETSOFT": ["Game L", "Game M"],
-    "PLAYTECH": ["Game N", "Game O"],
-    "ADVANTPLAY": ["Game P", "Game Q"],
-    "GAMZIX": ["Game R", "Game S"],
-    "WOW GAMING": ["Game T", "Game U"],
-    "SIMPLEPLAY": ["Game V", "Game W"],
-    "RECTANGLE GAME": ["Game X", "Game Y"],
-    "PEGASUS": ["Game Z"],
-    "UU": ["Game AA"],
-    "VPLUS": ["Game BB", "Game CC"]
-}
-
-# 合并所有平台
-PLATFORMS_GAMES = {**CM8_PLATFORMS, **NEW_SUPPLIERS}
 
 # ====== 临时存储 ======
 pending_users = {}
 user_language = {}  # TG_ID: 'en'/'zh'/'my'
 
-# ====== 语言文本 ======
+# ====== 多语言文本 ======
 TEXTS = {
     "en": {
         "choose_lang": "🌐 Please Select Language",
-        "welcome": "🎰 Welcome to MAXWIN Official RTP Bot",
+        "welcome": "🔥 Welcome to MAXWIN AI RTP\n🤖 AI scans the highest RTP slot games\n📊 Click platform menu below to start",
         "choose_merchant": "Please select a merchant:",
         "register_prompt": "⚠️ Please register via official link:\nThen enter your account ID:",
         "share_contact": "📱 Please share your phone number",
         "wait_admin": "Please wait for Admin to approve your access.",
         "approved": "✅ Your account has been approved.\nSelect merchant:",
         "select_platform": "{merchant} - Please select a platform:",
-        "rtp_top": "{merchant} - {platform} RTP Scan Result:\n"
+        "scan_loading": ["Loading AI Engine...", "Calibrating volatility index...", "Syncing RTP Matrix...", "Analyzing slot volatility...", "Initializing RNG module..."],
+        "back_text": "🔙 Back",
+        "new_registration": "📥 NEW REGISTRATION REQUEST"
     },
     "zh": {
         "choose_lang": "请选择语言",
-        "welcome": "🎰 欢迎来到 MAXWIN 官方 RTP 机器人",
+        "welcome": "🔥 欢迎来到 MAXWIN AI RTP\n🤖 AI 扫描 RTP 最高的 slot 游戏\n📊 点击平台菜单开始",
         "choose_merchant": "请选择商家：",
         "register_prompt": "⚠️ 请通过以下链接注册：\n注册后请输入账号ID：",
         "share_contact": "📱 请授权手机号",
         "wait_admin": "请等待 Admin 审核权限。",
         "approved": "✅ 审核通过 ✅\n请选择商家：",
         "select_platform": "{merchant} - 请选择游戏平台：",
-        "rtp_top": "{merchant} - {platform} RTP 扫描结果:\n"
+        "scan_loading": ["加载 AI 引擎...","校准波动指数...","同步 RTP 矩阵...","分析老虎机波动率...","初始化随机模块..."],
+        "back_text": "🔙 返回",
+        "new_registration": "📥 新注册申请"
     },
     "my": {
         "choose_lang": "Sila Pilih Bahasa",
-        "welcome": "🎰 Selamat Datang ke MAXWIN RTP Bot Rasmi",
+        "welcome": "🔥 Selamat datang ke MAXWIN AI RTP\n🤖 AI yang scan RTP tertinggi dalam slot2\n📊 Tekan platform game menu di bawah untuk mula",
         "choose_merchant": "Sila pilih merchant:",
         "register_prompt": "⚠️ Sila daftar melalui pautan rasmi:\nKemudian masukkan ID akaun:",
         "share_contact": "📱 Sila kongsi nombor telefon anda",
         "wait_admin": "Sila tunggu Admin meluluskan akses anda.",
         "approved": "✅ Akaun anda telah diluluskan.\nPilih merchant:",
         "select_platform": "{merchant} - Sila pilih platform:",
-        "rtp_top": "{merchant} - {platform} Hasil Scan RTP:\n"
+        "scan_loading": ["Loading AI Engine...","Kalibrasi indeks volatiliti...","Menyelaraskan RTP Matrix...","Menganalisis slot volatility...","Memulakan modul RNG..."],
+        "back_text": "🔙 Kembali",
+        "new_registration": "📥 NEW REGISTRATION REQUEST"
     }
 }
 
 # ====== 保存用户 ======
 def save_users():
     with open(USERS_FILE, "w") as f:
-        json.dump(users_data, f)
+        json.dump(users_data, f, ensure_ascii=False, indent=2)
 
 # ====== /start ======
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user_id = update.message.from_user.id
     lang = user_language.get(user_id, "en")
-    
-    # 如果已经approve过
     if str(user_id) in users_data and users_data[str(user_id)].get("approved"):
-        # 发送视频
-        await context.bot.send_video(chat_id=user_id, video=VIDEO_FILE_ID)
-        # 显示 approve 欢迎信息 + 商家注册按钮
-        text = ""
-        if lang == "zh":
-            text = "🔥 欢迎来到 MAXWIN AI RTP\n🤖 AI 扫描最高 RTP 的游戏\n📊 点击下方平台菜单开始"
-        elif lang == "my":
-            text = "🔥 Selamat datang ke MAXWIN AI RTP\n🤖 AI yang scan RTP tertinggi dalam slot2\n📊 Tekan platform game menu di bawah untuk mula"
-        else:
-            text = "🔥 Welcome to MAXWIN AI RTP\n🤖 AI scans the highest RTP games\n📊 Press platform menu below to start"
-
-        await show_merchants_text(update, context, text)
-        return
-
-    # 第一次 start，选择语言
-    keyboard = [
-        [InlineKeyboardButton("🇨🇳 中文", callback_data="lang_zh")],
-        [InlineKeyboardButton("🇬🇧 English", callback_data="lang_en")],
-        [InlineKeyboardButton("🇲🇾 Bahasa Melayu", callback_data="lang_my")]
-    ]
-    reply_markup = InlineKeyboardMarkup(keyboard)
-    # 发送视频
-    await context.bot.send_video(chat_id=user_id, video=VIDEO_FILE_ID)
-    await update.message.reply_text("🌐 Please select language / 请选择语言 / Sila Pilih Bahasa", reply_markup=reply_markup)
+        # 已批准用户直接显示欢迎 + 视频 + 商家
+        await update.message.reply_video(
+            video=VIDEO_FILEID,
+            caption=TEXTS[lang]["welcome"],
+            parse_mode="HTML"
+        )
+        await show_merchants(update, lang)
+    else:
+        # 未批准用户选择语言
+        keyboard = [
+            [InlineKeyboardButton("🇨🇳 中文", callback_data="lang_zh")],
+            [InlineKeyboardButton("🇬🇧 English", callback_data="lang_en")],
+            [InlineKeyboardButton("🇲🇾 Bahasa Melayu", callback_data="lang_my")]
+        ]
+        reply_markup = InlineKeyboardMarkup(keyboard)
+        await update.message.reply_text("🌐 Please select language / 请选择语言 / Sila Pilih Bahasa", reply_markup=reply_markup)
 
 # ====== 语言选择 ======
 async def lang_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -152,16 +122,20 @@ async def lang_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
     lang = query.data.split("_")[1]
     user_language[query.from_user.id] = lang
     text = TEXTS[lang]["welcome"] + "\n\n" + TEXTS[lang]["choose_merchant"]
-    await show_merchants_text(query, context, text)
+    await show_merchants(query, lang)
 
 # ====== 显示商家 ======
-async def show_merchants_text(query, context, text):
-    keyboard = [[InlineKeyboardButton(m, callback_data=f"merchant_{m}")] for m in MERCHANT_LINKS.keys()]
-    keyboard.append([InlineKeyboardButton("🔙 返回语言选择", callback_data="back_lang")])
-    if isinstance(query, Update):  # 来自 /start
-        await query.message.reply_text(text=text, reply_markup=InlineKeyboardMarkup(keyboard))
-    else:  # callback query
-        await query.edit_message_text(text=text, reply_markup=InlineKeyboardMarkup(keyboard))
+async def show_merchants(obj, lang):
+    keyboard = []
+    for m in MERCHANT_LINKS.keys():
+        keyboard.append([InlineKeyboardButton(m, callback_data=f"merchant_{m}")])
+    # 可以注册按钮总在最底下
+    keyboard.append([InlineKeyboardButton(TEXTS[lang]["back_text"], callback_data="back_lang")])
+    reply_markup = InlineKeyboardMarkup(keyboard)
+    if isinstance(obj, Update):
+        await obj.message.reply_text(TEXTS[lang]["choose_merchant"], reply_markup=reply_markup)
+    else:
+        await obj.edit_message_text(TEXTS[lang]["choose_merchant"], reply_markup=reply_markup)
 
 # ====== 商家选择 ======
 async def merchant_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
@@ -171,20 +145,107 @@ async def merchant_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
     lang = user_language.get(user_id, "en")
     merchant = query.data.split("_")[1]
     context.user_data["merchant"] = merchant
-    if str(user_id) in users_data and users_data[str(user_id)].get("approved"):
-        text = TEXTS[lang]["select_platform"].format(merchant=merchant)
-        await show_platforms(query, merchant, lang, text)
-    else:
+
+    # 如果用户未注册这个商家，显示注册按钮
+    if str(user_id) not in users_data or merchant not in users_data[str(user_id)].get("registered_merchants", []):
         text = TEXTS[lang]["register_prompt"]
         register_button = InlineKeyboardButton("点击注册", url=MERCHANT_LINKS[merchant])
-        keyboard = [[register_button], [InlineKeyboardButton("🔙 返回商家选择", callback_data="back_merchant")]]
+        keyboard = [[register_button], [InlineKeyboardButton(TEXTS[lang]["back_text"], callback_data="back_merchant")]]
         await query.edit_message_text(text=text, reply_markup=InlineKeyboardMarkup(keyboard), disable_web_page_preview=True)
+    else:
+        # 已注册商家直接显示平台
+        await show_platforms(query, merchant, lang)
+
+# ====== 平台显示 ======
+async def show_platforms(query, merchant, lang):
+    keyboard = []
+    if merchant == "CM8":
+        for p in CM8_PLATFORMS.keys():
+            keyboard.append([InlineKeyboardButton(p, callback_data=f"platform_{merchant}_{p}")])
+    else:
+        # 默认PP/BNG/JILI/PG
+        for p in ["PP","BNG","JILI","PG"]:
+            keyboard.append([InlineKeyboardButton(p, callback_data=f"platform_{merchant}_{p}")])
+    keyboard.append([InlineKeyboardButton(TEXTS[lang]["back_text"], callback_data=f"back_merchant")])
+    text = TEXTS[lang]["select_platform"].format(merchant=merchant)
+    await query.edit_message_text(text=text, reply_markup=InlineKeyboardMarkup(keyboard))
+
+# ====== SCAN 游戏处理 ======
+async def platform_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    query = update.callback_query
+    await query.answer()
+    user_id = query.from_user.id
+    lang = user_language.get(user_id, "en")
+    _, merchant, platform = query.data.split("_")
+
+    # 获取该平台的游戏
+    if merchant == "CM8":
+        games = CM8_PLATFORMS.get(platform, [])
+    else:
+        # 默认生成20个游戏
+        games = [f"{platform}_Game_{i}" for i in range(1,21)]
+
+    # 显示 loading 过程
+    loading_messages = TEXTS[lang]["scan_loading"]
+    msg = await query.edit_message_text("Initializing scan...")
+    for i in range(1, 101, 20):
+        loading_text = random.choice(loading_messages)
+        bar = f"[{'■'* (i//10)}{'□'* (10 - i//10)}] {i}%"
+        await msg.edit_text(f"{loading_text}\n{bar}")
+        await asyncio.sleep(2)  # 每次2秒，总共10秒
+
+    # 生成每个游戏25个随机RTP，展示部分信息
+    result_lines = []
+    hot_count = 0
+    best_rtp = 0
+    for game in games:
+        rtp = round(random.uniform(30,98),2)
+        if rtp < 70:
+            icon = "🛑"
+        elif rtp < 80:
+            icon = "✅"
+        elif rtp < 90:
+            icon = "🔥"
+            hot_count += 1
+        else:
+            icon = "🏆"
+        best_rtp = max(best_rtp, rtp)
+        result_lines.append(f"{icon} {game} — {rtp}%")
+
+    scanned_count = len(games)
+    now = datetime.now().strftime("%d %b %Y %H:%M")
+    footer = f"━━━━━━━━━━━━━━━━━━\n📊 Scanned: {scanned_count}\n🔥 Hot: {hot_count}\n⚡ Best: {best_rtp}%\n🕒 {now}\n⚠️ Valid 15 minit sahaja"
+    message = f"🔍 SCAN RESULT — {platform}\n━━━━━━━━━━━━━━━━━━\n" + "\n".join(result_lines) + "\n" + footer
+
+    # 返回按钮
+    keyboard = [[InlineKeyboardButton(TEXTS[lang]["back_text"], callback_data=f"merchant_{merchant}")]]
+    await msg.edit_text(message, reply_markup=InlineKeyboardMarkup(keyboard))
+
+# ====== 返回键 ======
+async def back_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    query = update.callback_query
+    await query.answer()
+    user_id = query.from_user.id
+    lang = user_language.get(user_id, "en")
+
+    if query.data == "back_lang":
+        keyboard = [
+            [InlineKeyboardButton("🇨🇳 中文", callback_data="lang_zh")],
+            [InlineKeyboardButton("🇬🇧 English", callback_data="lang_en")],
+            [InlineKeyboardButton("🇲🇾 Bahasa Melayu", callback_data="lang_my")]
+        ]
+        await query.edit_message_text(TEXTS[lang]["choose_lang"], reply_markup=InlineKeyboardMarkup(keyboard))
+    elif query.data == "back_merchant":
+        await show_merchants(query, lang)
+    elif query.data.startswith("merchant_"):
+        merchant = query.data.split("_")[1]
+        await show_platforms(query, merchant, lang)
 
 # ====== 接收注册ID ======
 async def receive_id(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user_id = update.message.from_user.id
-    merchant = context.user_data.get("merchant")
     lang = user_language.get(user_id, "en")
+    merchant = context.user_data.get("merchant")
     if not merchant:
         return
     account_id = update.message.text
@@ -197,18 +258,15 @@ async def receive_id(update: Update, context: ContextTypes.DEFAULT_TYPE):
 async def receive_contact(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user = update.message.from_user
     lang = user_language.get(user.id, "en")
-    contact = update.message.contact
-    pending_users[user.id]["phone"] = contact.phone_number
+    pending_users[user.id]["phone"] = update.message.contact.phone_number
     pending_users[user.id]["approved"] = False
     users_data[str(user.id)] = pending_users[user.id]
+    users_data[str(user.id)]["registered_merchants"] = [pending_users[user.id]["merchant"]]
     save_users()
     if ADMIN_ID != 0:
         await context.bot.send_message(
             chat_id=ADMIN_ID,
-            text=f"📥 NEW REGISTRATION REQUEST\n\n🆔 Application: MW-{datetime.now().strftime('%Y%m%d-%H%M')}\n"
-                 f"👤 Username: @{user.username}\n📞 Phone: {contact.phone_number}\n🏢 Merchant: {pending_users[user.id]['merchant']}\n"
-                 f"🎮 Game ID: {pending_users[user.id]['account_id']}\n🌐 Language: {lang}\n🕒 {datetime.now().strftime('%d %b %Y %H:%M')}\n\n"
-                 f"Approve: /approve {user.id}"
+            text=f"{TEXTS[lang]['new_registration']}\n\n🆔 Application: MW-{datetime.now().strftime('%Y%m%d')}-xxxx\n👤 Username: @{user.username}\n📞 Phone: {pending_users[user.id]['phone']}\n🏢 Merchant: {pending_users[user.id]['merchant']}\n🎮 Game ID: {pending_users[user.id]['account_id']}\n🌐 Language: {lang}\n🕒 {datetime.now().strftime('%d %b %Y %H:%M')}\n\nApprove: /approve {user.id}"
         )
     await update.message.reply_text(TEXTS[lang]["wait_admin"])
 
@@ -223,94 +281,8 @@ async def approve(update: Update, context: ContextTypes.DEFAULT_TYPE):
         users_data[str(user_id)]["approved"] = True
         save_users()
         lang = user_language.get(user_id, "en")
-        # 发送欢迎 + 商家选择
-        text = ""
-        if lang == "zh":
-            text = "🔥 欢迎来到 MAXWIN AI RTP\n🤖 AI 扫描最高 RTP 的游戏\n📊 点击下方平台菜单开始"
-        elif lang == "my":
-            text = "🔥 Selamat datang ke MAXWIN AI RTP\n🤖 AI yang scan RTP tertinggi dalam slot2\n📊 Tekan platform game menu di bawah untuk mula"
-        else:
-            text = "🔥 Welcome to MAXWIN AI RTP\n🤖 AI scans the highest RTP games\n📊 Press platform menu below to start"
-        await context.bot.send_video(chat_id=user_id, video=VIDEO_FILE_ID)
-        # 显示商家选择
-        await show_merchants_text(update, context, text)
+        await context.bot.send_message(chat_id=user_id, text=TEXTS[lang]["approved"])
         await update.message.reply_text(f"用户 {user_id} 已批准 ✅")
-
-# ====== 平台显示 ======
-async def show_platforms(query, merchant, lang, text):
-    keyboard = [[InlineKeyboardButton(p, callback_data=f"platform_{merchant}_{p}")] for p in PLATFORMS_GAMES.keys()]
-    keyboard.append([InlineKeyboardButton("🔙 返回商家选择", callback_data="back_merchant")])
-    await query.edit_message_text(text=text, reply_markup=InlineKeyboardMarkup(keyboard))
-
-# ====== 游戏RTP显示 ======
-async def platform_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    query = update.callback_query
-    await query.answer()
-    user_id = query.from_user.id
-    lang = user_language.get(user_id, "en")
-    _, merchant, platform = query.data.split("_")
-    games = PLATFORMS_GAMES.get(platform, [])
-
-    # 发送 loading 动画
-    loading_steps = [
-        "Loading AI Engine...",
-        "Calibrating volatility index...",
-        "Syncing RTP Matrix...",
-        "Optimizing slot RNG...",
-        "Finalizing RTP data..."
-    ]
-    msg = await query.edit_message_text("Starting scan...")
-    for i, step in enumerate(loading_steps, 1):
-        percent = int(i / len(loading_steps) * 100)
-        bar = "■" * (percent // 10) + "□" * (10 - percent // 10)
-        await msg.edit_text(f"{step} [{bar}] {percent}%")
-        await asyncio.sleep(2)  # 模拟加载
-
-    # 生成每个游戏随机25个RTP
-    game_rtp_text = f"🔍 SCAN RESULT — {platform}\n━━━━━━━━━━━━━━━━━━\n"
-    game_rtp_text += f"👤 {merchant} | 🆔 账户ID\n━━━━━━━━━━━━━━━━━━\n"
-    for game in games:
-        rtp = round(random.uniform(30, 98), 2)
-        if 40 <= rtp <= 69:
-            icon = "🛑"
-        elif 70 <= rtp <= 79:
-            icon = "✅"
-        elif 80 <= rtp <= 89:
-            icon = "🔥"
-        else:
-            icon = "🏆"
-        game_rtp_text += f"{icon} {game} — {rtp}%\n"
-
-    # 扫描统计
-    total_scanned = len(games)
-    hot_count = sum(1 for game in games if 80 <= round(random.uniform(30,98),2) <= 89)
-    best_rtp = max(round(random.uniform(30, 98),2) for _ in games)
-    game_rtp_text += "━━━━━━━━━━━━━━━━━━\n"
-    game_rtp_text += f"📊 Scanned: {total_scanned} | 🔥 Hot: {hot_count} | ⚡ Best: {best_rtp}%\n"
-    game_rtp_text += f"🕒 {datetime.now().strftime('%d %b %Y %H:%M')}\n⚠️ Valid 15 minit sahaja"
-
-    # 返回按钮
-    keyboard = [[InlineKeyboardButton("🔙 返回平台选择", callback_data=f"merchant_{merchant}")]]
-    await msg.edit_text(game_rtp_text, reply_markup=InlineKeyboardMarkup(keyboard))
-
-# ====== 返回按钮 ======
-async def back_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    query = update.callback_query
-    await query.answer()
-    user_id = query.from_user.id
-    lang = user_language.get(user_id, "en")
-    if query.data == "back_lang":
-        keyboard = [
-            [InlineKeyboardButton("🇨🇳 中文", callback_data="lang_zh")],
-            [InlineKeyboardButton("🇬🇧 English", callback_data="lang_en")],
-            [InlineKeyboardButton("🇲🇾 Bahasa Melayu", callback_data="lang_my")]
-        ]
-        await query.edit_message_text("🌐 Please select language / 请选择语言 / Sila Pilih Bahasa", reply_markup=InlineKeyboardMarkup(keyboard))
-    elif query.data == "back_merchant":
-        text = TEXTS[lang]["choose_merchant"]
-        keyboard = [[InlineKeyboardButton(m, callback_data=f"merchant_{m}")] for m in MERCHANT_LINKS.keys()]
-        keyboard.append([InlineKeyboardButton("🔙 返回语言选择", callback_data="back_lang")])
-        await query.edit_message_text(text=text, reply_markup=InlineKeyboardMarkup(keyboard))
 
 # ====== MAIN ======
 def main():
