@@ -1,4 +1,6 @@
-GAMES = {
+# data/cm8.py
+
+PLATFORMS = {
     "BNG": [
         "LUCKY PENNY x1000",
         "SUN OF EGYPT 5",
@@ -166,10 +168,11 @@ GAMES = {
                    "4 POTS RICHES",
                    "COIN STRIKE 2",
 
-        ...
     ],
     "HACKSAW": [
         "Stick'Em",
         ...
     ]
 }
+
+
