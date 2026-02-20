@@ -1,12 +1,13 @@
 import json
 import random
+import asyncio
 from telegram import Update, InlineKeyboardButton, InlineKeyboardMarkup, ReplyKeyboardMarkup, KeyboardButton
 from telegram.ext import ApplicationBuilder, CommandHandler, CallbackQueryHandler, MessageHandler, ContextTypes, filters
 import os
 
 # ====== 配置 ======
-BOT_TOKEN = os.environ.get("BOT_TOKEN")
-ADMIN_ID = int(os.environ.get("ADMIN_ID", 0))
+BOT_TOKEN = os.environ.get("BOT_TOKEN")  # 设置你的 BOT TOKEN
+ADMIN_ID = int(os.environ.get("ADMIN_ID", 0))  # Admin TG ID
 USERS_FILE = "users.json"
 
 # ====== 初始化用户文件 ======
@@ -28,8 +29,15 @@ MERCHANT_LINKS = {
 # ====== 平台 ======
 PLATFORMS = ["PP", "BNG", "JILI", "PG"]
 
-# ====== 游戏示例数据 ======
-GAMES = {p: [f"{p}_Game_{i}" for i in range(1,36)] for p in PLATFORMS}
+# ====== 游戏示例 ======
+GAMES = {p: [f"{p}_Game_{i}" for i in range(1, 26)] for p in PLATFORMS}  # 每个平台25个游戏
+
+# ====== 生成随机RTP ======
+# 每个游戏有25个独立随机RTP
+GAME_RTP = {}
+for platform, games in GAMES.items():
+    for game in games:
+        GAME_RTP[game] = [round(random.uniform(88, 98), 2) for _ in range(25)]
 
 # ====== 临时存储 ======
 pending_users = {}
@@ -46,6 +54,7 @@ TEXTS = {
         "wait_admin": "Please wait for Admin to approve your access.",
         "approved": "✅ Your account has been approved.\nSelect merchant:",
         "select_platform": "{merchant} - Please select a platform:",
+        "rtp_loading": "⏳ Loading RTP for {game}...",
         "rtp_top": "{merchant} - {platform} RTP TOP 15\n\n"
     },
     "zh": {
@@ -57,6 +66,7 @@ TEXTS = {
         "wait_admin": "请等待 Admin 审核权限。",
         "approved": "✅ 审核通过 ✅\n请选择商家：",
         "select_platform": "{merchant} - 请选择游戏平台：",
+        "rtp_loading": "⏳ 正在加载 {game} RTP...",
         "rtp_top": "{merchant} - {platform} RTP TOP 15\n\n"
     },
     "my": {
@@ -68,6 +78,7 @@ TEXTS = {
         "wait_admin": "Sila tunggu Admin meluluskan akses anda.",
         "approved": "✅ Akaun anda telah diluluskan.\nPilih merchant:",
         "select_platform": "{merchant} - Sila pilih platform:",
+        "rtp_loading": "⏳ Memuatkan RTP untuk {game}...",
         "rtp_top": "{merchant} - {platform} RTP TOP 15\n\n"
     }
 }
@@ -101,7 +112,6 @@ async def show_merchants(query, text):
     user_id = query.from_user.id
     lang = user_language.get(user_id, "en")
     keyboard = [[InlineKeyboardButton(m, callback_data=f"merchant_{m}")] for m in MERCHANT_LINKS.keys()]
-    # 添加返回语言选择按钮
     keyboard.append([InlineKeyboardButton("🔙 返回语言选择", callback_data="back_lang")])
     await query.edit_message_text(text=text, reply_markup=InlineKeyboardMarkup(keyboard))
 
@@ -118,7 +128,6 @@ async def merchant_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
         await show_platforms(query, merchant, lang, text)
     else:
         text = TEXTS[lang]["register_prompt"]
-        # 注册按钮
         register_button = InlineKeyboardButton("点击注册", url=MERCHANT_LINKS[merchant])
         keyboard = [[register_button], [InlineKeyboardButton("🔙 返回商家选择", callback_data="back_merchant")]]
         await query.edit_message_text(text=text, reply_markup=InlineKeyboardMarkup(keyboard), disable_web_page_preview=True)
@@ -166,28 +175,44 @@ async def approve(update: Update, context: ContextTypes.DEFAULT_TYPE):
         await context.bot.send_message(chat_id=user_id, text=TEXTS[lang]["approved"])
         await update.message.reply_text(f"用户 {user_id} 已批准 ✅")
 
-# ====== 平台显示 ======
+# ====== 显示平台 ======
 async def show_platforms(query, merchant, lang, text):
     keyboard = [[InlineKeyboardButton(p, callback_data=f"platform_{merchant}_{p}")] for p in PLATFORMS]
-    # 添加返回商家选择按钮
     keyboard.append([InlineKeyboardButton("🔙 返回商家选择", callback_data="back_merchant")])
     await query.edit_message_text(text=text, reply_markup=InlineKeyboardMarkup(keyboard))
 
-# ====== 平台RTP显示 ======
+# ====== 平台RTP显示（带Loading） ======
 async def platform_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
     query = update.callback_query
     await query.answer()
     user_id = query.from_user.id
     lang = user_language.get(user_id, "en")
     _, merchant, platform = query.data.split("_")
+
     games = GAMES[platform]
-    rtp_list = [(game, round(random.uniform(88, 98),2)) for game in games]
+
+    # 构建消息显示 Loading
+    loading_message = TEXTS[lang]["rtp_loading"].format(game=games[0])
+    await query.edit_message_text(loading_message)
+
+    # 模拟加载延迟
+    await asyncio.sleep(1.5)
+
+    # 生成随机RTP并排序取Top15
+    rtp_list = []
+    for game in games:
+        game_rtp_values = GAME_RTP[game]
+        rtp_list.append((game, max(game_rtp_values)))  # Top值展示
+
     rtp_list.sort(key=lambda x: x[1], reverse=True)
     top15 = rtp_list[:15]
+
+    # 构建消息
     message = TEXTS[lang]["rtp_top"].format(merchant=merchant, platform=platform)
     for game, rtp in top15:
         message += f"{game} - {rtp}%\n"
-    # 添加返回平台按钮
+
+    # 返回按钮
     keyboard = [[InlineKeyboardButton("🔙 返回平台选择", callback_data=f"merchant_{merchant}")]]
     await query.edit_message_text(message, reply_markup=InlineKeyboardMarkup(keyboard))
 
