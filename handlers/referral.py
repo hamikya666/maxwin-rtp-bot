@@ -1,11 +1,24 @@
-async def referral_handler(update, context):
-    user_id = str(update.effective_user.id)
-    link = f"https://t.me/YOURBOT?start=REF{user_id}"
+from telegram import InlineKeyboardButton, InlineKeyboardMarkup
+from config import BOT_USERNAME
+
+async def referral_menu(update, context):
+    query = update.callback_query
+    user_id = str(query.from_user.id)
+
+    link = f"https://t.me/{BOT_USERNAME}?start=REF{user_id}"
+
+    keyboard = [
+        [InlineKeyboardButton("📤 Share Link", url=f"https://t.me/share/url?url={link}")],
+        [InlineKeyboardButton("⬅ Kembali", callback_data="back_main")]
+    ]
 
     text = (
-        "🔗 LINK REFERRAL BOSS\n"
-        "Share link dapatkan RM1 setiap invite!\n"
-        f"{link}"
+        "💰SHARE AND EARN💰\n\n"
+        f"{link}\n\n"
+        "Share link dapatkan RM1 setiap invite!"
     )
 
-    await update.callback_query.edit_message_caption(caption=text)
+    await query.edit_message_text(
+        text,
+        reply_markup=InlineKeyboardMarkup(keyboard)
+    )
