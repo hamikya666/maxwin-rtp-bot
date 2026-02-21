@@ -1,1 +1,18 @@
-{}
+{
+  "user_id_telegram": {
+    "language": "中文",
+    "merchants": {
+      "CM8": {
+        "registered": true,
+        "approved": true,
+        "account_id": "998877",
+        "last_scan": "2026-02-20T06:33:00"
+      }
+    },
+    "referral_code": "REF12345",
+    "wallet": {
+        "balance": 10,
+        "total_referrals": 3
+    }
+  }
+}
