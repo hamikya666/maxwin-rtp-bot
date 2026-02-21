@@ -5,12 +5,11 @@ from datetime import datetime, timedelta
 from telegram import InlineKeyboardButton, InlineKeyboardMarkup
 from config import MERCHANT_MODULES
 from database import load, save
+from database import ensure_user
 
 async def scan_menu(update, context):
     user_id = str(update.effective_user.id)
-from database import ensure_user
-
-users = ensure_user(user_id)
+    users = ensure_user(user_id)
 
     keyboard = [
         [InlineKeyboardButton(m, callback_data=f"scan_{m}")]
