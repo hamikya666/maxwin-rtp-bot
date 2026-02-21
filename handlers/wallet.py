@@ -1,19 +1,16 @@
-from telegram.ext import CallbackQueryHandler
-from database import get_user
+from database import load
 
-async def wallet_menu(update, context):
-    query = update.callback_query
-    await query.answer()
+async def wallet_handler(update, context):
+    user_id = str(update.effective_user.id)
+    users = load()
+    user = users[user_id]
 
-    user = get_user(update.effective_user.id)
-
-    await query.edit_message_caption(
-        caption=f"💰 DOMPET Boss\n"
-                f"👤 ID: {update.effective_user.id}\n"
-                f"📊 Total Invite: {user['invites']} Orang\n"
-                f"💵 Baki Wallet: RM {user['wallet']}\n"
-                f"Min withdrawal: RM50"
+    text = (
+        "💰 DOMPET Boss\n"
+        f"👤 ID: {user_id}\n"
+        f"📊 Total Invite: {user['invite']} Orang\n"
+        f"💵 Baki Wallet: RM {user['wallet']}\n"
+        "Min withdrawal: RM50"
     )
 
-def setup(app):
-    app.add_handler(CallbackQueryHandler(wallet_menu, pattern="wallet_menu"))
+    await update.callback_query.edit_message_caption(caption=text)
