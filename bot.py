@@ -1,15 +1,15 @@
-import os
 import json
 import random
-import time
 import asyncio
-from datetime import datetime
+from datetime import datetime, timedelta
+
 from telegram import (
     Update,
     InlineKeyboardButton,
     InlineKeyboardMarkup,
     KeyboardButton,
-    ReplyKeyboardMarkup
+    ReplyKeyboardMarkup,
+    ReplyKeyboardRemove
 )
 from telegram.ext import (
     ApplicationBuilder,
@@ -17,213 +17,187 @@ from telegram.ext import (
     CallbackQueryHandler,
     MessageHandler,
     ContextTypes,
-    filters,
+    filters
 )
 
-# ================= CONFIG =================
-
-BOT_TOKEN = os.getenv("BOT_TOKEN")
-ADMIN_ID = int(os.getenv("ADMIN_ID"))
-
+TOKEN = "8194393436:AAF-fVYwsGflkXyHU7nOg7vmOJV40fRiDIM"
+ADMIN_ID = 5473935017  # 改成你的Telegram ID
 VIDEO_FILE_ID = "BAACAgUAAxkBAAJ682mYXMwrOUSatmP8ROjQJcx6vtw9AAI1HAACd5HBVPGdMpbcTHcZOgQ"
 
-SCAN_VALIDITY = 900  # 15分钟
-REFERRAL_REWARD = 1
-MIN_WITHDRAWAL = 50
+USERS_FILE = "users.json"
 
 MERCHANT_LINKS = {
     "CM8": "https://bit.ly/MaxWinCM8",
     "A9PLAY": "http://a9play5.com/R=F7464F",
     "ALD99": "https://bit.ly/ALDMaxWin",
-    "U9PLAY": "https://u9play99.com/R=C8BAAC",
+    "U9PLAY": "https://u9play99.com/R=C8BAAC"
 }
 
-# ================= DATA =================
+# =============================
+# USER DATA
+# =============================
 
-USERS_FILE = "users.json"
+def load_users():
+    try:
+        with open(USERS_FILE, "r") as f:
+            return json.load(f)
+    except:
+        return {}
 
-if not os.path.exists(USERS_FILE):
+def save_users(data):
     with open(USERS_FILE, "w") as f:
-        json.dump({}, f)
+        json.dump(data, f, indent=4)
 
-with open(USERS_FILE, "r") as f:
-    USERS = json.load(f)
+USERS = load_users()
 
+def generate_app_id():
+    date = datetime.now().strftime("%Y%m%d")
+    num = random.randint(1000, 9999)
+    return f"MW-{date}-{num}"
 
-def save_users():
-    with open(USERS_FILE, "w") as f:
-        json.dump(USERS, f, indent=2)
-
-
-# ================= UTIL =================
-
-def generate_ref_code(user_id):
-    return f"REF{str(user_id)[-5:]}"
-
-
-def now_str():
-    return datetime.now().strftime("%d %b %Y %H:%M")
-
-
-def generate_rtp():
-    r = random.randint(40, 99)
-    if r < 70:
-        icon = "🛑"
-    elif r < 80:
-        icon = "✅"
-    elif r < 90:
-        icon = "🔥"
-    else:
-        icon = "🏆"
-    return icon, r
-
-
-# ================= START =================
+# =============================
+# START
+# =============================
 
 async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    user = update.effective_user
-    user_id = str(user.id)
+    user = str(update.effective_user.id)
 
-    ref = None
-    if context.args:
-        ref = context.args[0]
+    if user in USERS and USERS[user]["status"] == "WAIT_APPROVAL":
+        await update.message.reply_text(
+            "⏳ Request bossku sedang diproses.\nSila tunggu admin approve ya 😘"
+        )
+        return
 
-    if user_id not in USERS:
-        USERS[user_id] = {
-            "approved": False,
-            "language": None,
-            "phone": None,
-            "merchants": {},
-            "cooldowns": {},
-            "wallet": {
-                "balance": 0,
-                "total_referrals": 0
-            },
-            "referral_code": generate_ref_code(user_id),
-            "referred_by": ref
-        }
-        save_users()
+    if user in USERS and USERS[user]["status"] == "APPROVED":
+        await send_main_menu(update, context)
+        return
 
-    # referral reward
-    if ref and user_id != ref:
-        for uid, data in USERS.items():
-            if data.get("referral_code") == ref:
-                USERS[uid]["wallet"]["balance"] += REFERRAL_REWARD
-                USERS[uid]["wallet"]["total_referrals"] += 1
-                save_users()
+    USERS[user] = {
+        "status": "NEW",
+        "language": None,
+        "phone": None,
+        "game_id": None,
+        "merchants": [],
+        "wallet": 0
+    }
+    save_users(USERS)
 
-    if not USERS[user_id]["approved"]:
-        await language_menu(update)
-    else:
-        await main_menu(update)
-
-
-# ================= LANGUAGE =================
-
-async def language_menu(update):
     keyboard = [
-        [InlineKeyboardButton("🇲🇾 Malay", callback_data="lang_my")]
+        [InlineKeyboardButton("🇲🇾 Malay", callback_data="lang_ms")],
+        [InlineKeyboardButton("🇨🇳 中文", callback_data="lang_cn")]
     ]
+
     await update.message.reply_text(
         "🎰 Selamat Datang ke MaxWin RTP Bot Rasmi",
         reply_markup=InlineKeyboardMarkup(keyboard)
     )
 
+# =============================
+# LANGUAGE
+# =============================
 
-async def set_language(update: Update, context: ContextTypes.DEFAULT_TYPE):
+async def choose_language(update: Update, context: ContextTypes.DEFAULT_TYPE):
     query = update.callback_query
     await query.answer()
 
-    user_id = str(query.from_user.id)
-    USERS[user_id]["language"] = "MY"
-    save_users()
+    user = str(query.from_user.id)
+    USERS[user]["language"] = query.data
+    USERS[user]["status"] = "REGISTERING"
+    save_users(USERS)
 
-    await register_menu(query)
-
-
-# ================= REGISTER =================
-
-async def register_menu(query):
     keyboard = [
-        [InlineKeyboardButton(m, callback_data=f"register_{m}")]
-        for m in MERCHANT_LINKS.keys()
+        [InlineKeyboardButton("CM8", callback_data="reg_CM8")],
+        [InlineKeyboardButton("A9PLAY", callback_data="reg_A9PLAY")],
+        [InlineKeyboardButton("ALD99", callback_data="reg_ALD99")],
+        [InlineKeyboardButton("U9PLAY", callback_data="reg_U9PLAY")]
     ]
+
     await query.edit_message_text(
         "⚠️Sila pilih salah satu platform berikut dan klik mendaftar\n"
         "⚠️Sila daftar melalui pautan rasmi 😘",
         reply_markup=InlineKeyboardMarkup(keyboard)
     )
 
+# =============================
+# REGISTER FLOW
+# =============================
 
-async def register_merchant(update: Update, context: ContextTypes.DEFAULT_TYPE):
+async def register_platform(update: Update, context: ContextTypes.DEFAULT_TYPE):
     query = update.callback_query
     await query.answer()
 
-    merchant = query.data.split("_")[1]
-    context.user_data["registering"] = merchant
+    user = str(query.from_user.id)
+    platform = query.data.split("_")[1]
 
-    keyboard = [
-        [InlineKeyboardButton("📝 Daftar", url=MERCHANT_LINKS[merchant])],
-        [InlineKeyboardButton("⬅ Kembali", callback_data="back_register")]
-    ]
+    context.user_data["register_platform"] = platform
 
     await query.edit_message_text(
-        f"➡️Kemudian masukkan ID akaun:",
-        reply_markup=InlineKeyboardMarkup(keyboard)
+        f"➡️ Kemudian masukkan ID akaun untuk {platform}:"
     )
 
+async def receive_game_id(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    user = str(update.effective_user.id)
 
-async def receive_id(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    user_id = str(update.effective_user.id)
-
-    if "registering" not in context.user_data:
+    if USERS[user]["status"] != "REGISTERING":
         return
 
-    merchant = context.user_data["registering"]
-    account_id = update.message.text
+    USERS[user]["game_id"] = update.message.text
+    save_users(USERS)
 
-    USERS[user_id]["merchants"][merchant] = {
-        "account_id": account_id,
-        "approved": False
-    }
-
-    save_users()
-
-    button = KeyboardButton("📱 Share Phone", request_contact=True)
-    keyboard = ReplyKeyboardMarkup([[button]], resize_keyboard=True)
+    keyboard = [[KeyboardButton("📱 Share Phone", request_contact=True)]]
 
     await update.message.reply_text(
         "📱 Sila kongsi nombor telefon boss untuk AI daftar",
-        reply_markup=keyboard
+        reply_markup=ReplyKeyboardMarkup(keyboard, resize_keyboard=True, one_time_keyboard=True)
     )
 
+async def receive_phone(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    user = str(update.effective_user.id)
 
-async def receive_contact(update: Update, context: ContextTypes.DEFAULT_TYPE):
-    user_id = str(update.effective_user.id)
-    contact = update.message.contact.phone_number
-    USERS[user_id]["phone"] = contact
-    save_users()
+    if USERS[user]["status"] != "REGISTERING":
+        return
 
-    await context.bot.send_message(
-        chat_id=ADMIN_ID,
-        text=f"📥 NEW REGISTRATION REQUEST\n\n"
-             f"👤 {update.effective_user.username}\n"
-             f"📞 {contact}\n"
-             f"🕒 {now_str()}",
-        reply_markup=InlineKeyboardMarkup([
-            [
-                InlineKeyboardButton("Approve", callback_data=f"approve_{user_id}"),
-                InlineKeyboardButton("Reject", callback_data=f"reject_{user_id}")
-            ]
-        ])
-    )
+    USERS[user]["phone"] = update.message.contact.phone_number
+    USERS[user]["status"] = "WAIT_APPROVAL"
+    USERS[user]["application_id"] = generate_app_id()
+    save_users(USERS)
 
     await update.message.reply_text(
-        "⏳ Request bossku dah masuk. Sila tunggu admin approve dulu ya 😘"
+        "⏳ Permohonan sedang diproses oleh AI Verification System.\n"
+        "Sila tunggu admin approve ya 😘",
+        reply_markup=ReplyKeyboardRemove()
     )
 
+    # Send to admin
+    app_id = USERS[user]["application_id"]
 
-# ================= ADMIN =================
+    text = (
+        f"📥 NEW REGISTRATION REQUEST\n\n"
+        f"🆔 Application: {app_id}\n"
+        f"👤 Username: @{update.effective_user.username}\n"
+        f"📞 Phone: {USERS[user]['phone']}\n"
+        f"🏢 Merchant: {context.user_data.get('register_platform')}\n"
+        f"🎮 Game ID: {USERS[user]['game_id']}\n"
+        f"🌐 Language: {USERS[user]['language']}\n"
+        f"🕒 {datetime.now().strftime('%d %b %Y %H:%M')}"
+    )
+
+    keyboard = [
+        [
+            InlineKeyboardButton("✅ Approve", callback_data=f"approve_{user}"),
+            InlineKeyboardButton("❌ Reject", callback_data=f"reject_{user}")
+        ]
+    ]
+
+    await context.bot.send_message(
+        ADMIN_ID,
+        text,
+        reply_markup=InlineKeyboardMarkup(keyboard)
+    )
+
+# =============================
+# ADMIN ACTION
+# =============================
 
 async def admin_action(update: Update, context: ContextTypes.DEFAULT_TYPE):
     query = update.callback_query
@@ -232,158 +206,157 @@ async def admin_action(update: Update, context: ContextTypes.DEFAULT_TYPE):
     action, user_id = query.data.split("_")
 
     if action == "approve":
-        USERS[user_id]["approved"] = True
-        save_users()
+        USERS[user_id]["status"] = "APPROVED"
+        save_users(USERS)
+
         await context.bot.send_message(
-            chat_id=user_id,
-            text="✅ Akaun Boss telah diluluskan🔥"
+            int(user_id),
+            "✅ Akaun Boss telah diluluskan🔥"
         )
-        await query.edit_message_text("User Approved")
 
-    if action == "reject":
-        USERS[user_id]["approved"] = False
-        save_users()
+        await context.bot.send_video(
+            int(user_id),
+            VIDEO_FILE_ID,
+            caption="🔥Selamat datang ke MAXWIN AI RTP\n"
+                    "🤖AI yang scan RTP tertinggi dalam slot2\n"
+                    "📊 Tekan game menu di bawah untuk mula",
+            reply_markup=main_menu_keyboard()
+        )
+
+        await query.edit_message_text("✅ Approved")
+
+    else:
+        USERS[user_id]["status"] = "NEW"
+        save_users(USERS)
+
         await context.bot.send_message(
-            chat_id=user_id,
-            text="❌ Rejected. Sila daftar semula."
+            int(user_id),
+            "❌ Permohonan ditolak.\nSila daftar semula."
         )
-        await query.edit_message_text("User Rejected")
 
+        await query.edit_message_text("❌ Rejected")
 
-# ================= MAIN MENU =================
+# =============================
+# MAIN MENU
+# =============================
 
-async def main_menu(update):
-    keyboard = [
-        [InlineKeyboardButton("🎮 Scan RTP", callback_data="scan_menu")],
-        [InlineKeyboardButton("📝 Daftar", callback_data="register_menu")],
-        [InlineKeyboardButton("💰 DOMPET Boss", callback_data="wallet")],
-        [InlineKeyboardButton("🔗 SHARE AND EARN", callback_data="share")]
-    ]
+def main_menu_keyboard():
+    return InlineKeyboardMarkup([
+        [InlineKeyboardButton("🎮 Scan RTP", callback_data="scan")],
+        [InlineKeyboardButton("💰 Dompet", callback_data="wallet")],
+        [InlineKeyboardButton("🔗 Share & Earn", callback_data="share")]
+    ])
 
-    await update.message.reply_video(VIDEO_FILE_ID)
-    await update.message.reply_text(
-        "🔥Selamat datang ke MAXWIN AI RTP\n"
-        "🤖AI yang scan RTP tertinggi dalam slot2\n"
-        "📊 Tekan game menu di bawah untuk mula",
-        reply_markup=InlineKeyboardMarkup(keyboard)
+async def send_main_menu(update, context):
+    await update.message.reply_video(
+        VIDEO_FILE_ID,
+        caption="🔥Selamat datang ke MAXWIN AI RTP\n"
+                "🤖AI yang scan RTP tertinggi dalam slot2\n"
+                "📊 Tekan game menu di bawah untuk mula",
+        reply_markup=main_menu_keyboard()
     )
 
-
-# ================= SCAN =================
+# =============================
+# SCAN
+# =============================
 
 async def scan_menu(update: Update, context: ContextTypes.DEFAULT_TYPE):
     query = update.callback_query
     await query.answer()
 
     keyboard = [
-        [InlineKeyboardButton(m, callback_data=f"scan_{m}")]
-        for m in MERCHANT_LINKS.keys()
+        [InlineKeyboardButton(x, callback_data=f"scan_{x}")]
+        for x in MERCHANT_LINKS.keys()
     ]
+    keyboard.append([InlineKeyboardButton("⬅ Kembali", callback_data="back")])
 
-    await query.edit_message_text(
+    await query.edit_message_caption(
         "🔥Selamat datang ke MAXWIN AI RTP\n"
+        "🤖AI yang scan RTP tertinggi dalam slot2\n"
         "📊 Tekan platform game menu di bawah untuk mula",
         reply_markup=InlineKeyboardMarkup(keyboard)
     )
 
-
-async def scan_engine(update: Update, context: ContextTypes.DEFAULT_TYPE):
+async def scan_result(update: Update, context: ContextTypes.DEFAULT_TYPE):
     query = update.callback_query
     await query.answer()
 
-    user_id = str(query.from_user.id)
-    merchant = query.data.split("_")[1]
+    msg = await query.edit_message_caption("🔄 Initializing AI ENGINE...")
 
-    now = int(time.time())
+    for i in range(0, 101, 10):
+        bar = "█"*(i//10) + "□"*(10 - i//10)
+        await msg.edit_caption(f"🔄 AI RTP MATRIX SCANNING...\n[{bar}] {i}%")
+        await asyncio.sleep(0.4)
 
-    last = USERS[user_id]["cooldowns"].get(merchant)
-
-    if last and now - last < SCAN_VALIDITY:
-        remain = SCAN_VALIDITY - (now - last)
-        await query.edit_message_text(
-            f"⏳ Next Scan Available In: {remain//60}m {remain%60}s"
-        )
-        return
-
-    USERS[user_id]["cooldowns"][merchant] = now
-    save_users()
-
-    msg = await query.edit_message_text(
-        "Scanning probability layers...\n"
-        "Initializing AI ENGINE...\n"
-        "Syncing RTP MATRIX...\n"
-        "[■■■■■■■■□□] 80%"
-    )
-
-    await asyncio.sleep(3)
-
-    icon, rtp = generate_rtp()
+    expire = datetime.now() + timedelta(minutes=15)
 
     result = (
-        f"🔍 SCAN RESULT — {merchant}\n"
-        f"━━━━━━━━━━━━━━━━━━\n"
-        f"{icon} RTP — {rtp}%\n"
-        f"━━━━━━━━━━━━━━━━━━\n"
-        f"🕒 {now_str()}\n"
-        f"⚠️ Valid 15 minit sahaja"
+        f"🔍 SCAN RESULT — {query.data.split('_')[1]}\n"
+        "━━━━━━━━━━━━━━━━━━\n"
+        f"👤 ID: {USERS[str(query.from_user.id)]['game_id']}\n"
+        "━━━━━━━━━━━━━━━━━━\n"
+        "🏆 Goddess of Egypt — 92%\n"
+        "🔥 Coin Express — 80%\n"
+        "✅ Lady Fortune — 75%\n"
+        "━━━━━━━━━━━━━━━━━━\n"
+        f"🕒 {datetime.now().strftime('%d %b %Y %H:%M')}\n"
+        "⚠️ Valid 15 minit sahaja\n"
+        f"⏳ Expire at: {expire.strftime('%H:%M')}"
     )
 
-    await msg.edit_text(result)
+    await msg.edit_caption(result)
 
+# =============================
+# SHARE
+# =============================
 
-# ================= WALLET =================
-
-async def wallet(update: Update, context: ContextTypes.DEFAULT_TYPE):
+async def share_link(update: Update, context: ContextTypes.DEFAULT_TYPE):
     query = update.callback_query
     await query.answer()
 
-    user_id = str(query.from_user.id)
-    data = USERS[user_id]["wallet"]
+    user = str(query.from_user.id)
+    link = f"https://t.me/YourBot?start=REF{user}"
 
-    await query.edit_message_text(
-        f"💰 DOMPET Boss\n"
-        f"👤 ID: {user_id}\n"
-        f"📊 Total Invite: {data['total_referrals']} Orang\n"
-        f"💵 Baki Wallet: RM {data['balance']}\n"
-        f"Min withdrawal: RM{MIN_WITHDRAWAL}"
+    keyboard = [
+        [InlineKeyboardButton("📤 Share Link",
+                              url=f"https://t.me/share/url?url={link}")]
+    ]
+
+    await query.edit_message_caption(
+        f"💰SHARE AND EARN💰\n\n{link}",
+        reply_markup=InlineKeyboardMarkup(keyboard)
     )
 
+# =============================
+# BACK
+# =============================
 
-# ================= SHARE =================
-
-async def share(update: Update, context: ContextTypes.DEFAULT_TYPE):
+async def back_menu(update: Update, context: ContextTypes.DEFAULT_TYPE):
     query = update.callback_query
     await query.answer()
-
-    user_id = str(query.from_user.id)
-    code = USERS[user_id]["referral_code"]
-
-    link = f"https://t.me/{context.bot.username}?start={code}"
-
-    await query.edit_message_text(
-        f"💰SHARE AND EARN💰\n\n{link}"
+    await query.edit_message_caption(
+        "🔥Selamat datang ke MAXWIN AI RTP\n"
+        "🤖AI yang scan RTP tertinggi dalam slot2\n"
+        "📊 Tekan game menu di bawah untuk mula",
+        reply_markup=main_menu_keyboard()
     )
 
+# =============================
+# MAIN
+# =============================
 
-# ================= RUN =================
+app = ApplicationBuilder().token(TOKEN).build()
 
-def main():
-    app = ApplicationBuilder().token(BOT_TOKEN).build()
+app.add_handler(CommandHandler("start", start))
+app.add_handler(CallbackQueryHandler(choose_language, pattern="lang_"))
+app.add_handler(CallbackQueryHandler(register_platform, pattern="reg_"))
+app.add_handler(CallbackQueryHandler(admin_action, pattern="approve_|reject_"))
+app.add_handler(CallbackQueryHandler(scan_menu, pattern="^scan$"))
+app.add_handler(CallbackQueryHandler(scan_result, pattern="scan_"))
+app.add_handler(CallbackQueryHandler(share_link, pattern="share"))
+app.add_handler(CallbackQueryHandler(back_menu, pattern="back"))
 
-    app.add_handler(CommandHandler("start", start))
-    app.add_handler(CallbackQueryHandler(set_language, pattern="lang_"))
-    app.add_handler(CallbackQueryHandler(register_merchant, pattern="register_"))
-    app.add_handler(CallbackQueryHandler(admin_action, pattern="approve_|reject_"))
-    app.add_handler(CallbackQueryHandler(scan_menu, pattern="scan_menu"))
-    app.add_handler(CallbackQueryHandler(scan_engine, pattern="scan_"))
-    app.add_handler(CallbackQueryHandler(wallet, pattern="wallet"))
-    app.add_handler(CallbackQueryHandler(share, pattern="share"))
-    app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, receive_id))
-    app.add_handler(MessageHandler(filters.CONTACT, receive_contact))
+app.add_handler(MessageHandler(filters.TEXT & ~filters.COMMAND, receive_game_id))
+app.add_handler(MessageHandler(filters.CONTACT, receive_phone))
 
-    print("BOT RUNNING...")
-    app.run_polling()
-
-
-if __name__ == "__main__":
-    main()
+app.run_polling()
