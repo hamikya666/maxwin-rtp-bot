@@ -1,7 +1,12 @@
 from telegram.ext import ApplicationBuilder, CommandHandler, CallbackQueryHandler
 from telegram import InlineKeyboardButton, InlineKeyboardMarkup
 from config import TOKEN, VIDEO_FILE_ID
-from handlers import register, scan, admin, wallet, referral
+
+import handlers.register as register
+import handlers.scan as scan
+import handlers.admin as admin
+import handlers.wallet as wallet
+import handlers.referral as referral
 
 async def start(update, context):
     keyboard = [
