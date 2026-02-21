@@ -20,10 +20,8 @@ def ensure_user(user_id):
         users[user_id] = {
             "status": "NEW",
             "language": None,
-            "merchants": {},
             "wallet": 0,
-            "invite": 0,
-            "scan_expiry": None
+            "invite": 0
         }
         save(users)
 
