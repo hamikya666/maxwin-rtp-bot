@@ -8,7 +8,9 @@ from database import load, save
 
 async def scan_menu(update, context):
     user_id = str(update.effective_user.id)
-    users = load()
+from database import ensure_user
+
+users = ensure_user(user_id)
 
     keyboard = [
         [InlineKeyboardButton(m, callback_data=f"scan_{m}")]
