@@ -1,11 +1,10 @@
 from database import load
+from database import ensure_user
 
 async def wallet_handler(update, context):
     user_id = str(update.effective_user.id)
-from database import ensure_user
-
-users = ensure_user(user_id)
-user = users[user_id]
+    users = ensure_user(user_id)
+    user = users[user_id]
 
     text = (
         "💰 DOMPET Boss\n"
