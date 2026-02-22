@@ -6,18 +6,33 @@ import handlers.register as register
 import handlers.wallet as wallet
 import handlers.referral as referral
 
+# =========================
+# 主菜单逻辑（兼容 message + callback）
+# =========================
 async def start(update, context):
     user_id = str(update.effective_user.id)
     users = ensure_user(user_id)
     user = users[user_id]
 
-    # 语言选择
+    # 判断来源
+    if update.message:
+        sender = update.message
+        send_text = sender.reply_text
+        send_video = sender.reply_video
+    else:
+        query = update.callback_query
+        await query.answer()
+        sender = query.message
+        send_text = sender.reply_text
+        send_video = sender.reply_video
+
+    # 语言未选择
     if user["language"] is None:
         keyboard = [
             [InlineKeyboardButton("🇨🇳 中文", callback_data="lang_cn")],
             [InlineKeyboardButton("🇲🇾 Bahasa Melayu", callback_data="lang_my")]
         ]
-        await update.message.reply_text(
+        await send_text(
             "Please choose language:",
             reply_markup=InlineKeyboardMarkup(keyboard)
         )
@@ -25,7 +40,7 @@ async def start(update, context):
 
     # 未审核
     if user["status"] != "APPROVED":
-        await update.message.reply_text(
+        await send_text(
             "⏳ Request bossku dah masuk.\nSila tunggu admin approve dulu ya 😘"
         )
         return
@@ -38,16 +53,22 @@ async def start(update, context):
         [InlineKeyboardButton("🔗 SHARE AND EARN", callback_data="ref")]
     ]
 
-    await update.message.reply_video(
+    await send_video(
         VIDEO_FILE_ID,
-        caption="🔥Selamat datang ke MAXWIN AI RTP\n🤖AI yang scan RTP tertinggi dalam slot2\n📊 Tekan game menu di bawah untuk mula",
+        caption="🔥Selamat datang ke MAXWIN AI RTP\n"
+                "🤖AI yang scan RTP tertinggi dalam slot2\n"
+                "📊 Tekan game menu di bawah untuk mula",
         reply_markup=InlineKeyboardMarkup(keyboard)
     )
 
+# =========================
+# 设置语言
+# =========================
 async def set_language(update, context):
     query = update.callback_query
-    user_id = str(query.from_user.id)
+    await query.answer()
 
+    user_id = str(query.from_user.id)
     users = ensure_user(user_id)
 
     if query.data == "lang_cn":
@@ -62,14 +83,23 @@ async def set_language(update, context):
         for m in MERCHANT_LINKS
     ]
 
+    keyboard.append([InlineKeyboardButton("⬅ Kembali", callback_data="back_main")])
+
     await query.edit_message_text(
-        "⚠️Sila pilih salah satu platform berikut dan klik mendaftar\n⚠️Sila daftar melalui pautan rasmi 😘",
+        "⚠️Sila pilih salah satu platform berikut dan klik mendaftar\n"
+        "⚠️Sila daftar melalui pautan rasmi 😘",
         reply_markup=InlineKeyboardMarkup(keyboard)
     )
 
+# =========================
+# 返回主菜单
+# =========================
 async def back_main(update, context):
     await start(update, context)
 
+# =========================
+# 启动BOT
+# =========================
 app = ApplicationBuilder().token(TOKEN).build()
 
 app.add_handler(CommandHandler("start", start))
